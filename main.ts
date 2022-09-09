@@ -41,7 +41,7 @@ cli.command("init", "scaffold a .wardrobe folder if it does not exist")
     Deno.writeFileSync(
       "./.wardrobe/cmd/hello.ts",
       encoder.encode(
-        `import { createCommandArgument, WardrobeCommand } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
+        `import { createCommandArgument, createOption, WardrobeCommand } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
 
 export const command: WardrobeCommand<[string | null], { scream: boolean }> = {
   description: "This is a description",

@@ -1,6 +1,5 @@
-import * as fs from "https://deno.land/std@0.154.0/fs/mod.ts";
+import { cac, fs } from "./deps.ts";
 
-import { cac } from "https://unpkg.com/cac/mod.ts";
 import { Command } from "./command.ts";
 
 function getFileExtension(fname: string) {

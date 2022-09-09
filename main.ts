@@ -68,6 +68,8 @@ export const command: WardrobeCommand<[string | null], { scream: boolean }> = {
     `,
       ),
     );
+
+    console.log("Created the .wardrobe folder. Try out the sample command via `wardrobe`!");
   });
 
 cli.command(

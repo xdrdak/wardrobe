@@ -1,79 +1,86 @@
-type CommandAction = (
-  commandOptions: unknown[],
-  meta: { cwd: string; wardrobeCommandDirectory: string },
+export type CommandAction<Arguments, Options> = (
+  meta: {
+    args: Arguments;
+    options: Options;
+    cwd: string;
+    wardrobeCommandDirectory: string;
+  },
 ) => void;
 
-export class Command {
-  private _description: string;
-  private _action: CommandAction;
-  private _options: [string, string][] = [];
-  private _commandArguments: string[] = [];
+type OptionName = `--${string}`;
+type OptionDescription = string;
+type Option = [OptionName, OptionDescription];
 
-  constructor() {
-    this._description = "";
-    this._action = () => {};
+type ArgumentOptional = `[${string}]`;
+type ArgumentRequired = `<${string}>`;
+type ArgumentOptionalVariadic = `[...${string}]`;
+type ArgumentRequiredVariadic = `<...${string}>`;
+
+type Argument =
+  | ArgumentOptional
+  | ArgumentRequired
+  | ArgumentOptionalVariadic
+  | ArgumentRequiredVariadic;
+
+function argumentOptional(s: string): ArgumentOptional {
+  return `[${s}]`;
+}
+
+function argumentOptionalVariadic(s: string): ArgumentOptionalVariadic {
+  return `[...${s}]`;
+}
+
+function argumentRequired(s: string): ArgumentRequired {
+  return `<${s}>`;
+}
+
+function argumentRequiredVariadic(s: string): ArgumentRequiredVariadic {
+  return `<...${s}>`;
+}
+
+export type WardrobeCommand<
+  Arguments = unknown[],
+  Options = Record<string, unknown>,
+> = {
+  description: string;
+  action: CommandAction<Arguments, Options>;
+  options?: Option[];
+  commandArguments?: Argument[];
+};
+
+export function createOption(opt: {
+  name: OptionName;
+  description: string;
+  argument?: {
+    name: string;
+    isRequired: boolean;
+  };
+}): Option {
+  if (opt.argument) {
+    const optionArgument = opt.argument.isRequired
+      ? `<${opt.argument.name}>`
+      : `[${opt.argument.name}]`;
+
+    return [`${opt.name} ${optionArgument}`, opt.description];
   }
 
-  addOption(name: string, description: string) {
-    this._options.push([`--${name.replaceAll("-", "")}`, description]);
-    return this;
+  return [opt.name, opt.description];
+}
+
+export function createCommandArgument(
+  opt: { name: string; isRequired?: boolean; isVariadic?: boolean },
+): Argument {
+  if (opt.isRequired && opt.isVariadic) {
+    return argumentRequiredVariadic(opt.name);
   }
 
-  addOptionWithArgument(
-    opt: {
-      name: string;
-      argumentName: string;
-      isRequired: boolean;
-      description: string;
-    },
-  ): Command {
-    const optionArgument = opt.isRequired
-      ? `<${opt.argumentName}>`
-      : `[${opt.argumentName}]`;
-
-    this._options.push([
-      `--${opt.name.replaceAll("-", "")} ${optionArgument}`,
-      opt.description,
-    ]);
-
-    return this;
+  if (opt.isRequired && !opt.isVariadic) {
+    return argumentRequired(opt.name);
   }
 
-  setAction(fn: CommandAction) {
-    this._action = fn;
-    return this;
+  if (!opt.isRequired && opt.isVariadic) {
+    return argumentOptionalVariadic(opt.name);
   }
 
-  setDescription(s: string) {
-    this._description = s;
-    return this;
-  }
-
-  addCommandArgument(
-    opt: { name: string; isRequired: boolean; isVariadic: boolean },
-  ) {
-    let argument = opt.name;
-
-    if (opt.isVariadic) {
-      argument = `...${argument}`;
-    }
-
-    if (opt.isRequired) {
-      argument = `<${argument}>`;
-    } else {
-      argument = `[${argument}]`;
-    }
-
-    this._commandArguments.push(argument);
-    return this;
-  }
-
-  readCommand() {
-    return {
-      description: this._description,
-      action: this._action,
-      options: this._options,
-      commandArguments: this._commandArguments,
-    };
-  }
+  return argumentOptional(opt.name);
 }

@@ -27,6 +27,8 @@ deno install --allow-all --name=wardrobe https://raw.githubusercontent.com/xdrda
 You can quickly initialize a `.wardrobe` folder structure via the
 `wardrobe init` command.
 
+Included in the initialized wardrobe folder is a sample script.
+
 ## .wardrobe structure
 
 The structure of `.wardrobe` is pretty straight forward.
@@ -46,23 +48,22 @@ You must create a new command inside the `.wardrobe/cmd` folder.
 The name of the command will be set to the name of the command file you've just
 created.
 
-A `wardrobe` compatible command must export a `command` variable that is
-instanciated to a `Command` class;
+A `wardrobe` compatible command must export a `command` object that matches the expected `WardrobeCommand` type.
 
 ```ts
-// `.wardrobe/cmd/say-hello.ts`
-import { Command } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
+// `.wardrobe/cmd/hello.ts`
+import { createCommandArgument, WardrobeCommand } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
 
-export const command = new Command()
-  .addCommandArgument({
+export const command: WardrobeCommand<[string | null]> = {
+  description: "This is a description",
+  commandArguments: [createCommandArgument({
     name: "name",
-    isRequired: false,
-    isVariadic: false,
-  })
-  .setDescription("This is a description")
-  .setAction(([name]) => {
-    console.log(name);
-  });
+  })],
+  action: ({ args }) => {
+    const [name] = args;
+    console.log("hello", name);
+  },
+};
 ```
 
 ## Roadmap
@@ -71,6 +72,7 @@ export const command = new Command()
 
 - [] Support nested commands for nested cli prompts
 - [] More reliant execution of shell scripts
-- [] Replace Command class with simpler primitive
+- [x] Replace Command class with simpler primitive
+- [] Validation of command instead of just doing a hail mary
 
 

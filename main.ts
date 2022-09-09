@@ -1,7 +1,5 @@
 import { cac, fs } from "./deps.ts";
 
-import { Command } from "./command.ts";
-
 function getFileExtension(fname: string) {
   return fname.slice((fname.lastIndexOf(".") - 1 >>> 0) + 2);
 }
@@ -43,18 +41,30 @@ cli.command("init", "scaffold a .wardrobe folder if it does not exist")
     Deno.writeFileSync(
       "./.wardrobe/cmd/hello.ts",
       encoder.encode(
-        `import { Command } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
+        `import { createCommandArgument, WardrobeCommand } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
 
-export const command = new Command()
-  .addCommandArgument({
+export const command: WardrobeCommand<[string | null], { scream: boolean }> = {
+  description: "This is a description",
+  commandArguments: [createCommandArgument({
     name: "name",
-    isRequired: false,
-    isVariadic: false,
-  })
-  .setDescription("(example) say hello to something")
-  .setAction(([name]) => {
-    console.log("hello", name);
-  }); 
+  })],
+  options: [createOption({
+    name: "--scream",
+    description: "Scream the name",
+  })],
+  action: ({ args, options }) => {
+    const [name] = args;
+    const scream = options.scream;
+
+    if (!name) {
+      const ouput = "no one to say hello to";
+      console.log(scream ? ouput.toUpperCase() : ouput);
+    } else {
+      const output = \`hello \${name}!\`;
+      console.log(scream ? output.toUpperCase() : output);
+    }
+  },
+};
     `,
       ),
     );
@@ -99,17 +109,27 @@ if (wardrobePath) {
         const mod = await import(file.path);
 
         // Doing a bit of a hail mary here...
-        if (mod && mod.command && typeof mod.command.readCommand === 'function') {
-          const command = mod.command as Command;
-
-          const {
-            action,
-            commandArguments,
-            description,
-            options,
-          } = command.readCommand();
-
+        if (mod && mod.command && typeof mod.command === "object") {
           const commandName = file.name.replace(".ts", "");
+          const description = mod.command.description || "no description";
+          const commandArguments = mod.command.commandArguments || [];
+          const options = mod.command.options || [];
+
+          const action = (...actionArgs: unknown[]) => {
+            let options: unknown = {};
+            let args: unknown[] = [];
+
+            options = actionArgs.slice(-1).pop();
+            args = actionArgs.slice(0, -1);
+
+            return mod.command.action({
+              args,
+              options,
+              cwd: Deno.cwd(),
+              wardrobeCommandDirectory: `${wardrobePath}/cmd`,
+            });
+          };
+
           const commandString = [commandName, commandArguments.join(" ")]
             .join(
               " ",
@@ -118,12 +138,7 @@ if (wardrobePath) {
           for (const [name, description] of options) {
             subCommand.option(name, description);
           }
-          subCommand.action((...actionArgs) =>
-            action(actionArgs, {
-              cwd: Deno.cwd(),
-              wardrobeCommandDirectory: `${wardrobePath}/cmd`,
-            })
-          );
+          subCommand.action(action);
         }
         break;
       }

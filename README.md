@@ -19,7 +19,7 @@ listing and help outputs.
 
 ```sh
 # And here comes the complete disregard to security
-deno install --allow-all --name=wardrobe wardrobe.ts
+deno install --allow-all --name=wardrobe https://raw.githubusercontent.com/xdrdak/wardrobe/main/main.ts
 ```
 
 ## How to create a wardrobe
@@ -51,7 +51,7 @@ instanciated to a `Command` class;
 
 ```ts
 // `.wardrobe/cmd/say-hello.ts`
-import { Command } from "https://.../command.ts";
+import { Command } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
 
 export const command = new Command()
   .addCommandArgument({

@@ -10,10 +10,14 @@ function findFolderUpwards(
   startingPath: string,
   target: string,
 ): string | null {
-  for (const contents of Deno.readDirSync(startingPath)) {
-    if (contents.isDirectory && contents.name === target) {
-      return `${startingPath}/${target}`;
+  try {
+    for (const contents of Deno.readDirSync(startingPath)) {
+      if (contents.isDirectory && contents.name === target) {
+        return `${startingPath}/${target}`;
+      }
     }
+  } catch (_) {
+    return null;
   }
 
   if (startingPath === "/") {
@@ -25,6 +29,7 @@ function findFolderUpwards(
 }
 
 const decoder = new TextDecoder("utf-8");
+const encoder = new TextEncoder();
 
 const wardrobePath = findFolderUpwards(Deno.cwd(), ".wardrobe");
 
@@ -35,6 +40,24 @@ cli.help();
 cli.command("init", "scaffold a .wardrobe folder if it does not exist")
   .action(() => {
     fs.ensureDirSync("./.wardrobe/cmd");
+    Deno.writeFileSync(
+      "./.wardrobe/cmd/hello.ts",
+      encoder.encode(
+        `import { Command } from "https://raw.githubusercontent.com/xdrdak/wardrobe/main/command.ts";
+
+export const command = new Command()
+  .addCommandArgument({
+    name: "name",
+    isRequired: false,
+    isVariadic: false,
+  })
+  .setDescription("(example) say hello to something")
+  .setAction(([name]) => {
+    console.log("hello", name);
+  }); 
+    `,
+      ),
+    );
   });
 
 cli.command(
@@ -75,8 +98,8 @@ if (wardrobePath) {
       case "js": {
         const mod = await import(file.path);
 
-        // We're dealing with our command factory, life is easy...
-        if (mod && mod.command && mod.command instanceof Command) {
+        // Doing a bit of a hail mary here...
+        if (mod && mod.command && typeof mod.command.readCommand === 'function') {
           const command = mod.command as Command;
 
           const {

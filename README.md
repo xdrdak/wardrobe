@@ -64,3 +64,13 @@ export const command = new Command()
     console.log(name);
   });
 ```
+
+## Roadmap
+
+🤞 I keep using this...
+
+- [] Support nested commands for nested cli prompts
+- [] More reliant execution of shell scripts
+- [] Replace Command class with simpler primitive
+
+
